@@ -1,25 +1,63 @@
+# docker-compose.yml
+# Defines the multi-container application environment.
+# Run `docker-compose up --build` to start all services.
 
 services:
-  job-tracker:
-    build: .
-    container_name: job-tracker
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./data:/app/data
-      - ./config:/app/config
-    environment:
-      - NODE_ENV=production
-      - DB_PATH=/app/data/jobs.db
-      - EMAIL_SCAN_INTERVAL=300000  # 5 minutes
+  # Backend Service (Node.js API)
+  backend:
+    build: ./backend # Looks for a Dockerfile in the ./backend directory
+    container_name: job-tracker-backend
     restart: unless-stopped
+    ports:
+      - "3000:3000" # Exposes container port 3000 to host port 3000
+    volumes:
+      - ./backend:/app # Mounts the local backend directory into the container for live code changes
+      - /app/node_modules # A named volume to persist node_modules inside the container
+    environment:
+      # Database connection details are loaded from the .env file
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+    depends_on:
+      - db # Ensures the 'db' service starts before the 'backend' service
     networks:
-      - job-tracker-network
+      - app-network
 
-networks:
-  job-tracker-network:
-    driver: bridge
+  # Frontend Service (Nginx Web Server)
+  frontend:
+    build: ./frontend # Looks for a Dockerfile in the ./frontend directory
+    container_name: job-tracker-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80" # Exposes container port 80 (standard HTTP) to host port 8080
+    volumes:
+      - ./frontend:/usr/share/nginx/html # Mounts the local frontend files to be served by Nginx
+    depends_on:
+      - backend # Ensures the 'backend' service is available for API calls
+    networks:
+      - app-network
 
+  # Database Service (PostgreSQL)
+  db:
+    image: postgres:14-alpine # Uses the official PostgreSQL 14 image
+    container_name: job-tracker-db
+    restart: unless-stopped
+    environment:
+      # These variables will create the database and user on first run.
+      # They should be defined in your .env file.
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persists database data on the host machine
+    ports:
+      - "5432:5432" # Exposes the PostgreSQL port for potential direct database access
+    networks:
+      - app-network
+
+# Volumes define where Docker should store persistent data
 volumes:
-  job-data:
-    driver: local
+  postgres_data:
+
+# Networks allow containers to communicate with each other
+networks:
+  app-network:
+    driver: bridge
