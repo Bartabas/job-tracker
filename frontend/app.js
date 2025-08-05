@@ -68,7 +68,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">${job.company}</p>
             <p class="text-xs text-slate-400 dark:text-slate-500 mt-3">Applied: ${new Date(job.date_applied).toLocaleDateString()}</p>
         `;
-        // Prepend the new card to the top of the list
+        // *** THE FIX IS HERE: Changed appendChild to prepend ***
+        // This adds the new card to the top of the list, making it immediately visible.
         jobList.prepend(card);
     };
 
@@ -102,7 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(jobData),
             });
             if (!response.ok) {
-                // Try to get a more specific error message from the backend
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to create job');
             }
@@ -113,7 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
             addJobModal.classList.add('hidden'); // Hide the modal
         } catch (error) {
             console.error('Error creating job:', error);
-            // Use a less intrusive way to show errors in a real app, but alert is fine for now.
             alert(`Failed to save application: ${error.message}`);
         }
     });

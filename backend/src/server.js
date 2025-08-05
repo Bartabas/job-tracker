@@ -37,12 +37,10 @@ const setupDatabase = async () => {
 };
 
 // --- Middleware ---
-// These must be placed BEFORE the route definitions.
 app.use(cors());
-app.use(express.json()); // This is crucial for parsing the body of POST requests
+app.use(express.json()); // Crucial for parsing the body of POST requests
 
-// --- API Routes (Simplified) ---
-// We now attach the routes directly to the 'app' object.
+// --- API Routes ---
 
 // GET /api/jobs - Fetch all job applications
 app.get('/api/jobs', async (req, res) => {
@@ -57,20 +55,27 @@ app.get('/api/jobs', async (req, res) => {
 
 // POST /api/jobs - Create a new job application
 app.post('/api/jobs', async (req, res) => {
+    // --- ADDED: DETAILED LOGGING ---
+    console.log('--- Received POST request on /api/jobs ---');
+    console.log('Request Body:', req.body); // This will show us if the data is arriving
+
     const { company, title, url, notes } = req.body;
 
     if (!company || !title) {
+        console.log('Validation failed: Company or title missing.');
         return res.status(400).json({ error: 'Company and title are required' });
     }
 
     try {
+        console.log(`Attempting to insert: ${title} at ${company}`);
         const { rows } = await pool.query(
             'INSERT INTO jobs (company, title, url, notes) VALUES ($1, $2, $3, $4) RETURNING *',
             [company, title, url, notes]
         );
+        console.log('Database insertion successful!');
         res.status(201).json(rows[0]);
     } catch (err) {
-        console.error('Error creating job:', err.stack);
+        console.error('Database insertion failed:', err.stack);
         res.status(500).json({ error: 'Failed to create job' });
     }
 });
