@@ -1,0 +1,34 @@
+{
+  "application_confirmation": [
+    "thank you for your application",
+    "we have received your application",
+    "application received",
+    "your application for",
+    "application confirmation"
+  ],
+  "interview_invitation": [
+    "interview invitation",
+    "we would like to invite you",
+    "schedule an interview",
+    "interview request",
+    "phone screen",
+    "technical interview",
+    "would like to schedule"
+  ],
+  "job_offer": [
+    "job offer",
+    "offer of employment",
+    "we are pleased to offer",
+    "congratulations",
+    "employment offer",
+    "offer letter"  
+  ],
+  "rejection": [
+    "thank you for your interest",
+    "we have decided to move forward",
+    "not moving forward",
+    "position has been filled",
+    "we regret to inform",
+    "other candidates"
+  ]
+}

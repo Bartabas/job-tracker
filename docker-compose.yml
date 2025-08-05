@@ -1,0 +1,25 @@
+
+services:
+  job-tracker:
+    build: .
+    container_name: job-tracker
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+    environment:
+      - NODE_ENV=production
+      - DB_PATH=/app/data/jobs.db
+      - EMAIL_SCAN_INTERVAL=300000  # 5 minutes
+    restart: unless-stopped
+    networks:
+      - job-tracker-network
+
+networks:
+  job-tracker-network:
+    driver: bridge
+
+volumes:
+  job-data:
+    driver: local
