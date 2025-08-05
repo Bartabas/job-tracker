@@ -1,52 +1,82 @@
 // backend/src/server.js
 
-// This line is crucial for Docker to find the .env file in the root directory
 require('dotenv').config({ path: '/app/.env' });
 
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 
-// Create the Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// --- Database Connection ---
-// The Pool will use the DATABASE_URL environment variable automatically
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-// Middleware
-app.use(cors()); // Enable Cross-Origin Resource Sharing for the frontend
-app.use(express.json()); // Enable parsing of JSON in request bodies
-
-// --- API Routes ---
-
-// A simple test route to check database connection
-app.get('/api/test-db', async (req, res) => {
+// --- Database Setup ---
+const setupDatabase = async () => {
+  const client = await pool.connect();
   try {
-    const client = await pool.connect();
-    const result = await client.query('SELECT NOW()');
-    res.json({
-      message: 'Database connection successful!',
-      time: result.rows[0].now,
-    });
-    client.release();
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS jobs (
+        id SERIAL PRIMARY KEY,
+        company VARCHAR(255) NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        url VARCHAR(2048),
+        notes TEXT,
+        date_applied DATE NOT NULL DEFAULT CURRENT_DATE,
+        status VARCHAR(50) NOT NULL DEFAULT 'applied' 
+      );
+    `);
+    console.log('Database table "jobs" is ready.');
   } catch (err) {
-    console.error('Database connection error', err.stack);
-    res.status(500).json({ error: 'Failed to connect to database' });
+    console.error('Error setting up the database:', err.stack);
+  } finally {
+    client.release();
   }
+};
+
+// --- Middleware ---
+// These must be placed BEFORE the route definitions.
+app.use(cors());
+app.use(express.json()); // This is crucial for parsing the body of POST requests
+
+// --- API Routes (Simplified) ---
+// We now attach the routes directly to the 'app' object.
+
+// GET /api/jobs - Fetch all job applications
+app.get('/api/jobs', async (req, res) => {
+    try {
+        const { rows } = await pool.query('SELECT * FROM jobs ORDER BY id DESC');
+        res.json(rows);
+    } catch (err) {
+        console.error('Error fetching jobs:', err.stack);
+        res.status(500).json({ error: 'Failed to fetch jobs' });
+    }
 });
 
-// A simple root route to confirm the server is running
-app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to the Job Tracker API!' });
+// POST /api/jobs - Create a new job application
+app.post('/api/jobs', async (req, res) => {
+    const { company, title, url, notes } = req.body;
+
+    if (!company || !title) {
+        return res.status(400).json({ error: 'Company and title are required' });
+    }
+
+    try {
+        const { rows } = await pool.query(
+            'INSERT INTO jobs (company, title, url, notes) VALUES ($1, $2, $3, $4) RETURNING *',
+            [company, title, url, notes]
+        );
+        res.status(201).json(rows[0]);
+    } catch (err) {
+        console.error('Error creating job:', err.stack);
+        res.status(500).json({ error: 'Failed to create job' });
+    }
 });
 
-// TODO: We will add the /api/jobs routes here later.
-
-// Start the server
+// Start the server and setup the database
 app.listen(PORT, () => {
   console.log(`Backend server is running on http://localhost:${PORT}`);
+  setupDatabase();
 });

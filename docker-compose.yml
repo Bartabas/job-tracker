@@ -2,6 +2,8 @@
 # Defines the multi-container application environment.
 # Run `docker-compose up --build` to start all services.
 
+version: '3.8'
+
 services:
   # Backend Service (Node.js API)
   backend:
@@ -27,7 +29,8 @@ services:
     container_name: job-tracker-frontend
     restart: unless-stopped
     ports:
-      - "8080:80" # Exposes container port 80 (standard HTTP) to host port 8080
+      # UPDATED: Changed host port from 8080 to 8081 to avoid conflicts
+      - "8082:80" 
     volumes:
       - ./frontend:/usr/share/nginx/html # Mounts the local frontend files to be served by Nginx
     depends_on:
