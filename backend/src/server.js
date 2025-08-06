@@ -72,8 +72,14 @@ app.post('/api/jobs', async (req, res) => {
             'INSERT INTO jobs (company, title, url, notes) VALUES ($1, $2, $3, $4) RETURNING *',
             [company, title, url, notes]
         );
-        console.log('Database insertion successful!');
-        res.status(201).json(rows[0]);
+        const newJob = rows[0];
+        // Defensively add the 'status' property if it doesn't exist.
+        // This handles cases where the database schema might be out of sync.
+        if (!newJob.status) {
+            newJob.status = 'applied';
+        }
+        console.log('Database insertion successful! Sending back:', newJob);
+        res.status(201).json(newJob);
     } catch (err) {
         console.error('Database insertion failed:', err.stack);
         res.status(500).json({ error: 'Failed to create job' });

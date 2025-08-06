@@ -46,9 +46,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- RENDER A SINGLE JOB CARD ---
     const renderJobCard = (job) => {
-        // Find the correct column to place the card in
-        const jobList = document.querySelector(`.job-list[data-status='${job.status}']`);
-        if (!jobList) return;
+        // Find the column with the correct status, then the list inside it.
+        const column = document.querySelector(`[data-status='${job.status}']`);
+        if (!column) {
+            console.error(`Could not find a column with status: ${job.status}`);
+            return;
+        }
+        const jobList = column.querySelector('.job-list');
+        if (!jobList) {
+            console.error(`Could not find a .job-list element inside column: ${job.status}`);
+            return;
+        }
 
         const card = document.createElement('div');
         card.dataset.id = job.id;
@@ -106,9 +114,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to create job');
             }
-            const newJob = await response.json();
+            // The API returns the new job, but we'll re-fetch everything
+            // to ensure the UI is perfectly in sync with the backend.
+            await response.json();
             
-            renderJobCard(newJob); // Add the new card to the UI instantly
+            fetchJobs(); // Re-fetch and render all jobs.
             addJobForm.reset(); // Clear the form fields
             addJobModal.classList.add('hidden'); // Hide the modal
         } catch (error) {
