@@ -106,9 +106,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to create job');
             }
-            const newJob = await response.json();
+            // The API returns the new job, but we'll re-fetch everything
+            // to ensure the UI is perfectly in sync with the backend.
+            await response.json();
             
-            renderJobCard(newJob); // Add the new card to the UI instantly
+            fetchJobs(); // Re-fetch and render all jobs.
             addJobForm.reset(); // Clear the form fields
             addJobModal.classList.add('hidden'); // Hide the modal
         } catch (error) {
